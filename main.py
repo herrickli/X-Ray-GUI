@@ -114,30 +114,6 @@ class MyApp(QMainWindow):
     def video_pause(self):
         self.pause = True
 
-    def play_video_(self):
-        self.pause = False
-
-        video_path = r'F:/360MoveData/Users/HerrickLi/Desktop/cascade/opencv-pyqt5-master/utils/视频/00000000017000500.mp4'
-        cap = cv2.VideoCapture(video_path)
-        if cap.isOpened():  #VideoCaputre对象是否成功打开
-            print('已经打开了视频文件')
-        else:
-            print('视频文件打开失败')
-
-        while(cap.isOpened()): 
-            ret, frame = cap.read() 
-            # cv2.imshow('image', frame)
-            self.change_image(frame)
-            k = cv2.waitKey(1)
-            if self.pause:
-                break
-            # #q键退出
-            # if (k & 0xff == ord('q')): 
-            #     break
-            
-        cap.release() 
-        cv2.destroyAllWindows()
-
     def play_video(self):
         self.pause = False
 
@@ -150,26 +126,12 @@ class MyApp(QMainWindow):
 
         while(cap.isOpened()): 
             ret, frame = cap.read() 
-            # cv2.imshow('image', frame) 
             self.change_image(frame)
             print(frame.shape)
-            img_encode = cv2.imencode('.jpg', frame)[1]
-            img_str = img_encode.tostring()
-            print(type(img_encode))
-            # print(img_encode.shape)
-            #print(frame.shape)
-            #print(type(frame))
-            #img_byte = base64.b64encode(frame)
-            data = {'file':img_str}
-            r1 = requests.post("http://yh31388655.zicp.vip/vd", data=data)
-            # r1 = requests.post("http://yh31388655.zicp.vip/vd", files=data)
-            # print(r1)
+            
             k = cv2.waitKey(1)
             if self.pause:
                 break
-            # #q键退出
-            # if (k & 0xff == ord('q')): 
-            #     break
             
         cap.release() 
         cv2.destroyAllWindows()
