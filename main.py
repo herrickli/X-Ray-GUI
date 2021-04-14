@@ -69,6 +69,7 @@ class signal_frame(QThread):
                 # print(frame.shape)
                 count = 0
             time.sleep(wait_key*0.001)
+            self.mutex.unlock()
             # cv2.waitKey(wait_key*show_interval)
 
     def apply_result_to_img(self, results, img):
@@ -90,8 +91,8 @@ class MyApp(QMainWindow):
         self.action_right_rotate = QAction(QIcon("icons/rotate-left.png"), "向右旋转90", self)
         self.action_left_rotate = QAction(QIcon("icons/rotate-right.png"), "向左旋转90°", self)
         self.action_histogram = QAction(QIcon("icons/histogram.png"), "直方图", self)
-        self.action_play = QAction(QIcon("icons/play.png"), "播放视频", self)
-        self.action_pause = QAction(QIcon("icons/pause.png"), "暂停视频", self)
+        self.action_play_pause = QAction(QIcon("icons/play.png"), "播放视频", self)
+        # self.action_pause = QAction(QIcon("icons/pause.png"), "暂停视频", self)
         self.action_stop = QAction(QIcon("icons/stop.png"), "停止视频", self)
         
 
@@ -99,14 +100,14 @@ class MyApp(QMainWindow):
         self.action_right_rotate.triggered.connect(self.right_rotate)
         self.action_left_rotate.triggered.connect(self.left_rotate)
         self.action_histogram.triggered.connect(self.histogram)
-        self.action_play.triggered.connect(self.video_paly)
-        self.action_pause.triggered.connect(self.video_pause)
+        # self.action_play.triggered.connect(self.video_paly)
+        self.action_play_pause.triggered.connect(self.video_switch)
         self.action_stop.triggered.connect(self.video_stop)
 
         
 
         self.tool_bar.addActions((self.action_left_rotate, self.action_right_rotate, self.action_histogram,
-                                  self.action_play, self.action_pause))
+                                  self.action_play_pause, self.action_stop))
 
         self.useListWidget = UsedListWidget(self)
         self.funcListWidget = FuncListWidget(self)
@@ -148,10 +149,13 @@ class MyApp(QMainWindow):
         self.src_img = None
         self.cur_img = None
 
-        self.pause = False
+        self.isPause = False
+        self.isPlay = False
 
-        self.signal_thread = signal_frame()
-        self.signal_thread._signal.connect(self.signal_update_img)
+        self.signal_thread = None
+
+        # self.signal_thread = signal_frame()
+        # self.signal_thread._signal.connect(self.signal_update_img)
 
     def signal_update_img(self, data):
         frame = data['frame']
@@ -191,14 +195,34 @@ class MyApp(QMainWindow):
             plt.xlim([0, 256])
         plt.show()
 
-    def video_pause(self):
-        self.signal_thread.pause = True
+    def video_switch(self):
+        if not self.isPlay:
+            self.isPlay = True
+            self.signal_thread = signal_frame()
+            self.signal_thread._signal.connect(self.signal_update_img)
+            self.signal_thread.start()
+            self.action_play_pause.setIcon(QIcon("icons/pause.png"))
+            self.action_play_pause.setToolTip("暂停视频")
+        else:
+            if self.isPause: # 目前是暂停状态，应该切换为播放状态
+                self.isPause = False
+                self.signal_thread.isPause = False
+                self.signal_thread.resume()
+                self.action_play_pause.setIcon(QIcon("icons/pause.png"))
+                self.action_play_pause.setToolTip("暂停视频")
+            else: # 目前是播放状态， 应该切换为暂停状态
+                self.isPause = True
+                self.signal_thread.isPause = True
+                self.action_play_pause.setIcon(QIcon("icons/play.png"))
+                self.action_play_pause.setToolTip("播放视频")
+
 
     def video_stop(self):
-        self.signal_thread.cancel = True
-
-    def video_paly(self):
-        self.signal_thread.start()
+        self.isPlay = False
+        self.isPause = False
+        self.action_play_pause.setIcon(QIcon("icons/play.png"))
+        self.action_play_pause.setToolTip("播放视频")
+        self.signal_thread.isCancel = True
 
 
 if __name__ == "__main__":
