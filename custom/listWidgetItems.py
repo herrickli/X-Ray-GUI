@@ -28,6 +28,8 @@ class GrayingItem(MyItem):
     def __init__(self, parent=None):
         super(GrayingItem, self).__init__(' 灰度化 ', parent=parent)
         self._mode = BGR2GRAY_COLOR
+        self.setIcon(QIcon('icons/gray.png'))
+
 
     def __call__(self, img):
         img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
@@ -39,6 +41,7 @@ class FilterItem(MyItem):
 
     def __init__(self, parent=None):
         super().__init__('平滑处理', parent=parent)
+        self.setIcon(QIcon('icons/smooth.png'))
         self._ksize = 3
         self._kind = MEAN_FILTER
         self._sigmax = 0
@@ -56,6 +59,7 @@ class FilterItem(MyItem):
 class MorphItem(MyItem):
     def __init__(self, parent=None):
         super().__init__(' 形态学 ', parent=parent)
+        self.setIcon(QIcon('icons/form.png'))
         self._ksize = 3
         self._op = ERODE_MORPH_OP
         self._kshape = RECT_MORPH_SHAPE
@@ -72,6 +76,7 @@ class GradItem(MyItem):
 
     def __init__(self, parent=None):
         super().__init__('图像梯度', parent=parent)
+        self.setIcon(QIcon('icons/gradient.png'))
         self._kind = SOBEL_GRAD
         self._ksize = 3
         self._dx = 1
@@ -96,6 +101,7 @@ class GradItem(MyItem):
 class ThresholdItem(MyItem):
     def __init__(self, parent=None):
         super().__init__('阈值处理', parent=parent)
+        self.setIcon(QIcon('icons/threshold.png'))
         self._thresh = 127
         self._maxval = 255
         self._method = BINARY_THRESH_METHOD
@@ -111,6 +117,7 @@ class ThresholdItem(MyItem):
 class EdgeItem(MyItem):
     def __init__(self, parent=None):
         super(EdgeItem, self).__init__('边缘检测', parent=parent)
+        self.setIcon(QIcon('icons/border.png'))
         self._thresh1 = 20
         self._thresh2 = 100
 
@@ -123,6 +130,7 @@ class EdgeItem(MyItem):
 class ContourItem(MyItem):
     def __init__(self, parent=None):
         super(ContourItem, self).__init__('轮廓检测', parent=parent)
+        self.setIcon(QIcon('icons/contour.png'))
         self._mode = TREE_CONTOUR_MODE
         self._method = SIMPLE_CONTOUR_METHOD
         self._bbox = NORMAL_CONTOUR
@@ -155,6 +163,7 @@ class ContourItem(MyItem):
 class EqualizeItem(MyItem):
     def __init__(self, parent=None):
         super().__init__(' 均衡化 ', parent=parent)
+        self.setIcon(QIcon('icons/equal.png'))
         self._blue = True
         self._green = True
         self._red = True
@@ -173,6 +182,7 @@ class EqualizeItem(MyItem):
 class HoughLineItem(MyItem):
     def __init__(self, parent=None):
         super(HoughLineItem, self).__init__('直线检测', parent=parent)
+        self.setIcon(QIcon('icons/straight.png'))
         self._rho = 1
         self._theta = np.pi / 180
         self._thresh = 10
@@ -194,6 +204,7 @@ class HoughLineItem(MyItem):
 class LightItem(MyItem):
     def __init__(self, parent=None):
         super(LightItem, self).__init__('亮度调节', parent=parent)
+        self.setIcon(QIcon('icons/brightness.png'))
         self._alpha = 1
         self._beta = 0
 
@@ -206,6 +217,7 @@ class LightItem(MyItem):
 class GammaItem(MyItem):
     def __init__(self, parent=None):
         super(GammaItem, self).__init__('伽马校正', parent=parent)
+        self.setIcon(QIcon('icons/gamma.png'))
         self._gamma = 1
 
     def __call__(self, img):

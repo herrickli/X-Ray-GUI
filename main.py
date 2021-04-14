@@ -4,15 +4,84 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 import matplotlib.pyplot as plt
+import numpy
 
 from custom.stackedWidget import StackedWidget
 from custom.treeView import FileSystemTreeView
 from custom.listWidgets import FuncListWidget, UsedListWidget
 from custom.graphicsView import GraphicsView
 
-import requests
-import base64
+import time
+import threading
 
+from model import detect
+from model import cv2ImgAddText
+
+FONT_FACE  = cv2.FONT_HERSHEY_COMPLEX
+FONT_SIZE  = 1
+FONT_THICK = 1
+
+
+class signal_frame(QThread):
+    _signal = pyqtSignal(dict)
+    _signal_stop = pyqtSignal(int)
+    def __init__(self):
+        super(signal_frame, self).__init__()
+        self.mutex = QMutex()
+        self.cond = QWaitCondition()
+        self.isPause = False
+        self.isCancel = False
+
+    def pause(self):
+        self.isPause = True
+    
+    def resume(self):
+        self.isPause = False
+        self.cond.wakeAll()
+
+    def cancel(self):
+        self.isCancel = True
+
+    def run(self):
+        video_path = r'/home/licheng/projects/X-Ray-GUI/utils/00000000017000500.mp4'
+        cap = cv2.VideoCapture(video_path)
+        show_interval = 10
+        wait_key = int(1000 / cap.get(cv2.CAP_PROP_FPS))
+        
+        if cap.isOpened():  #VideoCaputre对象是否成功打开
+            print('已经打开了视频文件')
+        else:
+            print('视频文件打开失败')
+        count = 0
+        while(cap.isOpened()):
+            self.mutex.lock()
+            if self.isPause:
+                self.cond.wait(self.mutex)
+            if self.isCancel:
+                break 
+            ret, frame = cap.read() 
+            count += 1
+            if count == show_interval:
+                results = detect(frame)
+                frame = self.apply_result_to_img(results, frame)
+                self._signal.emit({'frame':frame})
+                # self.window.update_image(frame)
+                # print(frame.shape)
+                count = 0
+            time.sleep(wait_key*0.001)
+            # cv2.waitKey(wait_key*show_interval)
+
+    def apply_result_to_img(self, results, img):
+        for result in results:
+            obj, score, box = result
+            FONT_BACK_SIZE = cv2.getTextSize(obj, FONT_FACE, FONT_SIZE, FONT_THICK)[0]
+            if score > 0.5:
+                xmin, ymin, xmax, ymax = box
+                cv2.rectangle(img, (int(xmin), int(ymin)-FONT_BACK_SIZE[1]), (int(xmin)+FONT_BACK_SIZE[0], int(ymin)), (0,0,255,0.3), -1)
+                #cv2.putText(img, obj + '', (int(xmin), int(ymin)), FONT_FACE, FONT_SIZE, (255, 255, 255, 0.7), FONT_THICK)
+                img = cv2ImgAddText(img, obj, int(xmin), int(ymin)-FONT_BACK_SIZE[1], (255,255,255), 20)
+                cv2.rectangle(img, (int(xmin), int(ymin)), (int(xmax), int(ymax)), (0, 0, 255, 0.3), 2)
+        return img
 
 class MyApp(QMainWindow):
     def __init__(self):
@@ -23,13 +92,17 @@ class MyApp(QMainWindow):
         self.action_histogram = QAction(QIcon("icons/histogram.png"), "直方图", self)
         self.action_play = QAction(QIcon("icons/play.png"), "播放视频", self)
         self.action_pause = QAction(QIcon("icons/pause.png"), "暂停视频", self)
+        self.action_stop = QAction(QIcon("icons/stop.png"), "停止视频", self)
+        
 
 
         self.action_right_rotate.triggered.connect(self.right_rotate)
         self.action_left_rotate.triggered.connect(self.left_rotate)
         self.action_histogram.triggered.connect(self.histogram)
-        self.action_play.triggered.connect(self.play_video)
+        self.action_play.triggered.connect(self.video_paly)
         self.action_pause.triggered.connect(self.video_pause)
+        self.action_stop.triggered.connect(self.video_stop)
+
         
 
         self.tool_bar.addActions((self.action_left_rotate, self.action_right_rotate, self.action_histogram,
@@ -77,6 +150,13 @@ class MyApp(QMainWindow):
 
         self.pause = False
 
+        self.signal_thread = signal_frame()
+        self.signal_thread._signal.connect(self.signal_update_img)
+
+    def signal_update_img(self, data):
+        frame = data['frame']
+        self.change_image(frame) 
+
     def update_image(self):
         if self.src_img is None:
             return
@@ -112,30 +192,13 @@ class MyApp(QMainWindow):
         plt.show()
 
     def video_pause(self):
-        self.pause = True
+        self.signal_thread.pause = True
 
-    def play_video(self):
-        self.pause = False
+    def video_stop(self):
+        self.signal_thread.cancel = True
 
-        video_path = r'F:/360MoveData/Users/HerrickLi/Desktop/cascade/opencv-pyqt5-master/utils/视频/00000000017000500.mp4'
-        cap = cv2.VideoCapture(video_path)
-        if cap.isOpened():  #VideoCaputre对象是否成功打开
-            print('已经打开了视频文件')
-        else:
-            print('视频文件打开失败')
-
-        while(cap.isOpened()): 
-            ret, frame = cap.read() 
-            self.change_image(frame)
-            print(frame.shape)
-            
-            k = cv2.waitKey(1)
-            if self.pause:
-                break
-            
-        cap.release() 
-        cv2.destroyAllWindows()
-
+    def video_paly(self):
+        self.signal_thread.start()
 
 
 if __name__ == "__main__":

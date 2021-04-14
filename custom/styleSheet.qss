@@ -48,8 +48,8 @@ QGraphicsView{
 QListWidget::Item{
     border: 1px solid #BBBBBB;
     font-size: 20px;
-    background: #717678;
-    color: #DDDDDD;
+    background: #21c0ff;
+    color: #050505;
 }
 
 QListWidget::Item:hover{
